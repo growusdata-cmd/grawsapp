@@ -48,6 +48,31 @@ export default function LoginPage() {
         }
     }
 
+    const handleDemoLogin = async (roleEmail: string) => {
+        setLoading(true)
+        setError("")
+        const demoEmail = roleEmail
+        const demoPassword = "demo123"
+
+        try {
+            const result = await signIn("credentials", {
+                redirect: false,
+                email: demoEmail,
+                password: demoPassword,
+            })
+
+            if (result?.error) {
+                setError("Demo login failed")
+            } else {
+                window.location.href = "/"
+            }
+        } catch (err) {
+            setError("An unexpected error occurred")
+        } finally {
+            setLoading(false)
+        }
+    }
+
     return (
         <div className="flex items-center justify-center min-h-screen bg-gray-100">
             <Card className="w-full max-w-md">
@@ -86,10 +111,34 @@ export default function LoginPage() {
                             />
                         </div>
                     </CardContent>
-                    <CardFooter>
+                    <CardFooter className="flex flex-col space-y-4">
                         <Button className="w-full" type="submit" disabled={loading}>
                             {loading ? "Signing in..." : "Sign In"}
                         </Button>
+
+                        <div className="relative w-full">
+                            <div className="absolute inset-0 flex items-center">
+                                <span className="w-full border-t" />
+                            </div>
+                            <div className="relative flex justify-center text-xs uppercase">
+                                <span className="bg-background px-2 text-muted-foreground">Or demo access</span>
+                            </div>
+                        </div>
+
+                        <div className="grid grid-cols-2 gap-2 w-full">
+                            <Button variant="outline" size="sm" onClick={() => handleDemoLogin("admin@demo.com")} disabled={loading}>
+                                Admin
+                            </Button>
+                            <Button variant="outline" size="sm" onClick={() => handleDemoLogin("manager@demo.com")} disabled={loading}>
+                                Manager
+                            </Button>
+                            <Button variant="outline" size="sm" onClick={() => handleDemoLogin("inspector@demo.com")} disabled={loading}>
+                                Inspector
+                            </Button>
+                            <Button variant="outline" size="sm" onClick={() => handleDemoLogin("client@demo.com")} disabled={loading}>
+                                Client
+                            </Button>
+                        </div>
                     </CardFooter>
                 </form>
             </Card>

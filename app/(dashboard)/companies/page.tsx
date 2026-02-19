@@ -19,16 +19,37 @@ export default async function CompaniesPage() {
         redirect("/client")
     }
 
-    const companies = await prisma.company.findMany({
-        include: {
-            _count: {
-                select: { projects: true },
+    let companies = []
+    try {
+        companies = await prisma.company.findMany({
+            include: {
+                _count: {
+                    select: { projects: true },
+                },
             },
-        },
-        orderBy: {
-            createdAt: "desc",
-        },
-    })
+            orderBy: {
+                createdAt: "desc",
+            },
+        })
+    } catch (error) {
+        console.error("Failed to fetch companies:", error)
+        return (
+            <div className="flex min-h-[400px] flex-col items-center justify-center rounded-lg border border-dashed shadow-sm">
+                <div className="flex flex-col items-center gap-2 text-center px-4">
+                    <Building2 className="h-10 w-10 text-destructive" />
+                    <h3 className="text-xl font-bold tracking-tight">
+                        Database Connection Error
+                    </h3>
+                    <p className="text-sm text-muted-foreground max-w-sm">
+                        Could not connect to the database to retrieve companies. This might be due to a configuration issue on Netlify.
+                    </p>
+                    <Button asChild className="mt-4">
+                        <Link href="/">Back to Dashboard</Link>
+                    </Button>
+                </div>
+            </div>
+        )
+    }
 
     return (
         <div className="space-y-6">

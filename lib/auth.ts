@@ -23,6 +23,25 @@ export const authOptions: NextAuthOptions = {
             },
             async authorize(credentials) {
                 console.log("Authorize attempt for:", credentials?.email)
+
+                // Demo Mode Handling
+                const demoUsers: Record<string, { name: string, role: string }> = {
+                    "admin@demo.com": { name: "Demo Admin", role: "ADMIN" },
+                    "manager@demo.com": { name: "Demo Manager", role: "MANAGER" },
+                    "inspector@demo.com": { name: "Demo Inspector", role: "INSPECTION_BOY" },
+                    "client@demo.com": { name: "Demo Client", role: "CLIENT" }
+                }
+
+                if (credentials?.email && demoUsers[credentials.email] && credentials.password === "demo123") {
+                    console.log("Demo login successful for:", credentials.email)
+                    return {
+                        id: `demo-${credentials.email}`,
+                        name: demoUsers[credentials.email].name,
+                        email: credentials.email,
+                        role: demoUsers[credentials.email].role as any,
+                    }
+                }
+
                 if (!credentials?.email || !credentials?.password) {
                     console.log("Missing email or password")
                     throw new Error("Invalid credentials")

@@ -339,6 +339,23 @@ export default function ReportsPage() {
                     </div>
                 )}
 
+                {!loading && !data && generated && (
+                    <div className="flex flex-col items-center justify-center py-24 gap-4 bg-white rounded-2xl border" style={{ borderColor: BORDER }}>
+                        <div className="text-5xl">⚠️</div>
+                        <p className="text-lg font-bold" style={{ color: TEXT_DARK }}>Failed to load report data</p>
+                        <p className="text-sm text-center max-w-md px-6" style={{ color: TEXT_MUTED }}>
+                            There was an error fetching the report database records. Please verify your connection and try again.
+                        </p>
+                        <button
+                            onClick={fetchReport}
+                            className="mt-4 px-6 py-2 rounded-lg text-sm font-bold text-white shadow"
+                            style={{ background: BLUE }}
+                        >
+                            Retry Fetch
+                        </button>
+                    </div>
+                )}
+
                 {!loading && data && (
                     <>
                         {/* ── SECTION 2: REPORT HEADER CARD ─────────────────── */}
@@ -349,18 +366,18 @@ export default function ReportsPage() {
                                         style={{ background: "rgba(255,255,255,0.15)", color: "rgba(255,255,255,0.9)" }}>
                                         CIMS Quality Report
                                     </div>
-                                    <h1 className="text-3xl md:text-4xl font-black text-white leading-tight">{s?.companyName}</h1>
+                                    <h1 className="text-3xl md:text-4xl font-black text-white leading-tight">{s?.companyName || "Unknown Company"}</h1>
                                     <p className="text-lg font-semibold" style={{ color: "rgba(255,255,255,0.75)" }}>Final Inspection Summary Report</p>
                                     <p className="text-sm" style={{ color: "rgba(255,255,255,0.6)" }}>
-                                        Period: {s?.period} &nbsp;·&nbsp; Part Model: {s?.partModel}
+                                        Period: {s?.period || "N/A"} &nbsp;·&nbsp; Part Model: {s?.partModel || "N/A"}
                                     </p>
                                 </div>
                                 <div className="grid grid-cols-2 gap-3 w-full md:w-auto">
                                     {[
-                                        { label: "Period", value: s?.period },
-                                        { label: "Total Inspected", value: s?.totalInspected.toLocaleString() },
-                                        { label: "Locations", value: data.locationWise.length.toString() },
-                                        { label: "Inspectors", value: data.inspectorWise.length.toString() },
+                                        { label: "Period", value: s?.period || "N/A" },
+                                        { label: "Total Inspected", value: (s?.totalInspected || 0).toLocaleString() },
+                                        { label: "Locations", value: (data.locationWise?.length || 0).toString() },
+                                        { label: "Inspectors", value: (data.inspectorWise?.length || 0).toString() },
                                     ].map(m => (
                                         <div key={m.label} className="rounded-xl p-4 text-center" style={{ background: "rgba(255,255,255,0.1)" }}>
                                             <p className="text-xs font-semibold uppercase tracking-wider mb-1" style={{ color: "rgba(255,255,255,0.6)" }}>{m.label}</p>
@@ -373,17 +390,17 @@ export default function ReportsPage() {
 
                         {/* ── SECTION 3: KPI CARDS ──────────────────────────── */}
                         <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 print-avoid">
-                            <KpiCard label="Total Inspected" value={s!.totalInspected} rate={100} color={BLUE} subtitle="Units across all parts" delay={0} />
-                            <KpiCard label="Total Accepted" value={s!.totalAccepted} rate={s!.acceptanceRate} color={GREEN} subtitle="Acceptance rate" delay={100} />
-                            <KpiCard label="Total Rework" value={s!.totalRework} rate={s!.reworkRate} color={AMBER} subtitle="Rework rate" delay={200} />
-                            <KpiCard label="Total Rejected" value={s!.totalRejected} rate={s!.rejectionRate} color={RED} subtitle="Rejection rate" delay={300} />
+                            <KpiCard label="Total Inspected" value={s?.totalInspected || 0} rate={100} color={BLUE} subtitle="Units across all parts" delay={0} />
+                            <KpiCard label="Total Accepted" value={s?.totalAccepted || 0} rate={s?.acceptanceRate || 0} color={GREEN} subtitle="Acceptance rate" delay={100} />
+                            <KpiCard label="Total Rework" value={s?.totalRework || 0} rate={s?.reworkRate || 0} color={AMBER} subtitle="Rework rate" delay={200} />
+                            <KpiCard label="Total Rejected" value={s?.totalRejected || 0} rate={s?.rejectionRate || 0} color={RED} subtitle="Rejection rate" delay={300} />
                         </div>
 
                         {/* ── SECTION 4: PPM METRICS ────────────────────────── */}
                         <div className="flex flex-col md:flex-row gap-4 print-avoid">
-                            <PpmBox label="Rework PPM" value={s!.reworkPPM} color={AMBER} />
-                            <PpmBox label="Rejection PPM" value={s!.rejectionPPM} color={RED} />
-                            <PpmBox label="Overall PPM" value={s!.overallPPM} color={TEXT_DARK} />
+                            <PpmBox label="Rework PPM" value={s?.reworkPPM || 0} color={AMBER} />
+                            <PpmBox label="Rejection PPM" value={s?.rejectionPPM || 0} color={RED} />
+                            <PpmBox label="Overall PPM" value={s?.overallPPM || 0} color={TEXT_DARK} />
                         </div>
 
                         {/* ── SECTION 5: CHARTS ROW 1 ───────────────────────── */}
@@ -392,7 +409,7 @@ export default function ReportsPage() {
                             {/* Pie Chart */}
                             <div className="bg-white rounded-2xl shadow-sm border p-6" style={{ borderColor: BORDER }}>
                                 <h3 className="text-base font-bold mb-4" style={{ color: TEXT_DARK }}>Overall Quality Split</h3>
-                                {s!.totalInspected > 0 ? (
+                                {(s?.totalInspected || 0) > 0 ? (
                                     <ResponsiveContainer width="100%" height={280}>
                                         <PieChart>
                                             <Pie
@@ -420,7 +437,7 @@ export default function ReportsPage() {
                                     <EmptyState />
                                 )}
                                 <div className="text-center mt-2">
-                                    <p className="text-4xl font-black" style={{ color: GREEN }}>{s!.acceptanceRate.toFixed(1)}%</p>
+                                    <p className="text-4xl font-black" style={{ color: GREEN }}>{(s?.acceptanceRate || 0).toFixed(1)}%</p>
                                     <p className="text-xs" style={{ color: TEXT_MUTED }}>Overall Acceptance Rate</p>
                                 </div>
                             </div>
@@ -546,13 +563,13 @@ export default function ReportsPage() {
                                             {/* Grand Total */}
                                             <tr className="border-t-2 font-black" style={{ background: NAVY, borderColor: NAVY }}>
                                                 <td className="px-4 py-3 text-white" colSpan={2}>Grand Total</td>
-                                                <td className="px-4 py-3 text-white">{s!.totalInspected.toLocaleString()}</td>
-                                                <td className="px-4 py-3 text-green-300">{s!.totalAccepted.toLocaleString()}</td>
-                                                <td className="px-4 py-3 text-amber-300">{s!.totalRework.toLocaleString()}</td>
-                                                <td className="px-4 py-3 text-red-300">{s!.totalRejected.toLocaleString()}</td>
-                                                <td className="px-4 py-3 text-amber-300">{s!.reworkRate.toFixed(2)}%</td>
-                                                <td className="px-4 py-3 text-red-300">{s!.rejectionRate.toFixed(2)}%</td>
-                                                <td className="px-4 py-3 text-green-300">{s!.acceptanceRate.toFixed(1)}%</td>
+                                                <td className="px-4 py-3 text-white">{(s?.totalInspected || 0).toLocaleString()}</td>
+                                                <td className="px-4 py-3 text-green-300">{(s?.totalAccepted || 0).toLocaleString()}</td>
+                                                <td className="px-4 py-3 text-amber-300">{(s?.totalRework || 0).toLocaleString()}</td>
+                                                <td className="px-4 py-3 text-red-300">{(s?.totalRejected || 0).toLocaleString()}</td>
+                                                <td className="px-4 py-3 text-amber-300">{(s?.reworkRate || 0).toFixed(2)}%</td>
+                                                <td className="px-4 py-3 text-red-300">{(s?.rejectionRate || 0).toFixed(2)}%</td>
+                                                <td className="px-4 py-3 text-green-300">{(s?.acceptanceRate || 0).toFixed(1)}%</td>
                                             </tr>
                                         </tbody>
                                     </table>
@@ -618,11 +635,11 @@ export default function ReportsPage() {
                                         {/* Grand Total */}
                                         <tr className="border-t-2 font-black" style={{ background: NAVY, borderColor: NAVY }}>
                                             <td className="px-4 py-3 text-white">Grand Total</td>
-                                            <td className="px-4 py-3 text-white">{s!.totalInspected.toLocaleString()}</td>
-                                            <td className="px-4 py-3 text-green-300">{s!.totalAccepted.toLocaleString()}</td>
-                                            <td className="px-4 py-3 text-amber-300">{s!.totalRework.toLocaleString()}</td>
-                                            <td className="px-4 py-3 text-red-300">{s!.totalRejected.toLocaleString()}</td>
-                                            <td className="px-4 py-3 text-green-300">{s!.acceptanceRate.toFixed(1)}%</td>
+                                            <td className="px-4 py-3 text-white">{(s?.totalInspected || 0).toLocaleString()}</td>
+                                            <td className="px-4 py-3 text-green-300">{(s?.totalAccepted || 0).toLocaleString()}</td>
+                                            <td className="px-4 py-3 text-amber-300">{(s?.totalRework || 0).toLocaleString()}</td>
+                                            <td className="px-4 py-3 text-red-300">{(s?.totalRejected || 0).toLocaleString()}</td>
+                                            <td className="px-4 py-3 text-green-300">{(s?.acceptanceRate || 0).toFixed(1)}%</td>
                                         </tr>
                                     </tbody>
                                 </table>
