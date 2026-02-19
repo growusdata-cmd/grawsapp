@@ -2,17 +2,9 @@
 import { NextResponse } from "next/server"
 import { getServerSession } from "next-auth"
 import { authOptions } from "@/lib/auth"
-import { IncomingForm } from "formidable"
 import { promises as fs } from "fs"
 import path from "path"
 import { v4 as uuidv4 } from "uuid"
-
-// Disable body parser for this route to handle multipart form data
-export const config = {
-    api: {
-        bodyParser: false,
-    },
-}
 
 export async function POST(req: Request) {
     const session = await getServerSession(authOptions)
