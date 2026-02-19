@@ -22,38 +22,54 @@ export const authOptions: NextAuthOptions = {
                 password: { label: "Password", type: "password" },
             },
             async authorize(credentials) {
+                console.log("Authorize attempt for:", credentials?.email)
                 if (!credentials?.email || !credentials?.password) {
+                    console.log("Missing email or password")
                     throw new Error("Invalid credentials")
                 }
 
-                const user = await prisma.user.findUnique({
-                    where: {
-                        email: credentials.email,
-                    },
-                })
+                try {
+                    const user = await prisma.user.findUnique({
+                        where: {
+                            email: credentials.email,
+                        },
+                    })
 
-                if (!user || !user?.password) {
-                    throw new Error("Invalid credentials")
-                }
+                    if (!user) {
+                        console.log("User not found in database:", credentials.email)
+                        throw new Error("Invalid credentials")
+                    }
 
-                const isCorrectPassword = await bcrypt.compare(
-                    credentials.password,
-                    user.password
-                )
+                    if (!user.password) {
+                        console.log("User has no password set:", credentials.email)
+                        throw new Error("Invalid credentials")
+                    }
 
-                if (!isCorrectPassword) {
-                    throw new Error("Invalid credentials")
-                }
+                    const isCorrectPassword = await bcrypt.compare(
+                        credentials.password,
+                        user.password
+                    )
 
-                if (!user.isActive) {
-                    throw new Error("Account is inactive")
-                }
+                    if (!isCorrectPassword) {
+                        console.log("Password comparison failed for:", credentials.email)
+                        throw new Error("Invalid credentials")
+                    }
 
-                return {
-                    id: user.id,
-                    name: user.name,
-                    email: user.email,
-                    role: user.role,
+                    if (!user.isActive) {
+                        console.log("User account is inactive:", credentials.email)
+                        throw new Error("Account is inactive")
+                    }
+
+                    console.log("Login successful for:", credentials.email)
+                    return {
+                        id: user.id,
+                        name: user.name,
+                        email: user.email,
+                        role: user.role,
+                    }
+                } catch (error) {
+                    console.error("Auth error details:", error)
+                    throw error
                 }
             },
         }),
