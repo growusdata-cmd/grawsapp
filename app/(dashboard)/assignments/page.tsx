@@ -1,0 +1,369 @@
+
+"use client"
+
+import { useState, useEffect } from "react"
+import { useRouter } from "next/navigation"
+import { useSession } from "next-auth/react"
+import { Button } from "@/components/ui/button"
+import { Input } from "@/components/ui/input"
+import { Label } from "@/components/ui/label"
+import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card"
+import { Badge } from "@/components/ui/badge"
+import { Search, Loader2, Calendar, User, Briefcase, Building2, Trash2 } from "lucide-react"
+
+export default function AssignmentsPage() {
+    const { data: session, status } = useSession()
+    const router = useRouter()
+
+    useEffect(() => {
+        if (status === "unauthenticated") {
+            router.push("/login")
+        } else if (status === "authenticated" && session?.user?.role !== "ADMIN" && session?.user?.role !== "MANAGER") {
+            router.push("/client")
+        }
+    }, [status, session, router])
+
+    const [companies, setCompanies] = useState<any[]>([])
+    const [projects, setProjects] = useState<any[]>([])
+    const [inspectors, setInspectors] = useState<any[]>([])
+    const [assignments, setAssignments] = useState<any[]>([])
+
+
+    const [selectedCompanyId, setSelectedCompanyId] = useState("")
+    const [selectedProjectId, setSelectedProjectId] = useState("")
+    const [selectedInspectorId, setSelectedInspectorId] = useState("")
+
+    const [loading, setLoading] = useState(false)
+    const [fetching, setFetching] = useState(true)
+    const [searchTerm, setSearchTerm] = useState("")
+    const [filterStatus, setFilterStatus] = useState("all")
+
+    useEffect(() => {
+        fetchInitialData()
+    }, [])
+
+    useEffect(() => {
+        if (selectedCompanyId) {
+            fetchProjects(selectedCompanyId)
+        } else {
+            setProjects([])
+            setSelectedProjectId("")
+        }
+    }, [selectedCompanyId])
+
+    const fetchInitialData = async () => {
+        setFetching(true)
+        try {
+            const [compRes, insRes, assRes] = await Promise.all([
+                fetch("/api/companies"),
+                fetch("/api/users?role=INSPECTION_BOY"),
+                fetch("/api/assignments")
+            ])
+
+            if (compRes.ok) setCompanies(await compRes.json())
+            if (insRes.ok) setInspectors(await insRes.json())
+            if (assRes.ok) {
+                const data = await assRes.json()
+                if (Array.isArray(data)) {
+                    setAssignments(data)
+                } else {
+                    console.error("Assignments data is not an array:", data)
+                    setAssignments([])
+                }
+            } else {
+                console.error("Failed to fetch assignments:", await assRes.text())
+                setAssignments([])
+            }
+        } catch (error) {
+            console.error("Failed to fetch data", error)
+            setAssignments([])
+        } finally {
+            setFetching(false)
+        }
+    }
+
+    const fetchProjects = async (companyId: string) => {
+        try {
+            const res = await fetch(`/api/projects?companyId=${companyId}`)
+            if (res.ok) {
+                const data = await res.json()
+                if (Array.isArray(data)) {
+                    setProjects(data)
+                } else {
+                    setProjects([])
+                }
+            } else {
+                setProjects([])
+            }
+        } catch (error) {
+            console.error("Failed to fetch projects", error)
+            setProjects([])
+        }
+    }
+
+    const handleAssign = async (e: React.FormEvent) => {
+        e.preventDefault()
+        if (!selectedProjectId || !selectedInspectorId) return
+
+        setLoading(true)
+        try {
+            const res = await fetch("/api/assignments", {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({
+                    projectId: selectedProjectId,
+                    inspectionBoyId: selectedInspectorId
+                })
+            })
+
+            if (res.ok) {
+                // Refresh list
+                const assRes = await fetch("/api/assignments")
+                const assData = await assRes.json()
+                setAssignments(assData)
+
+                // Reset form
+                setSelectedInspectorId("")
+                setSelectedProjectId("")
+                setSelectedCompanyId("")
+
+                // Show success (you could add a toast here)
+                alert("Inspector assigned successfully!")
+            } else {
+                const error = await res.json()
+                alert(error.error + (error.details ? ": " + error.details : "") || "Failed to assign inspector")
+            }
+        } catch (error) {
+            alert("An error occurred")
+        } finally {
+            setLoading(false)
+        }
+    }
+
+    const handleCancel = async (id: string) => {
+        if (!confirm("Are you sure you want to cancel this assignment?")) return
+
+        try {
+            const res = await fetch(`/api/assignments/${id}`, {
+                method: "PATCH",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({ status: "cancelled" })
+            })
+
+            if (res.ok) {
+                setAssignments(assignments.map(a => a.id === id ? { ...a, status: "cancelled" } : a))
+            }
+        } catch (error) {
+            alert("Failed to cancel assignment")
+        }
+    }
+
+    const filteredAssignments = Array.isArray(assignments) ? assignments.filter(a => {
+        const matchesSearch =
+            a.project?.name?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+            a.inspectionBoy?.name?.toLowerCase().includes(searchTerm.toLowerCase())
+
+        const matchesStatus = filterStatus === "all" || a.status === filterStatus
+
+        return matchesSearch && matchesStatus
+    }) : []
+
+    const getStatusColor = (status: string) => {
+        switch (status) {
+            case "active": return "bg-green-100 text-green-800 border-green-200"
+            case "completed": return "bg-gray-100 text-gray-800 border-gray-200"
+            case "cancelled": return "bg-red-100 text-red-800 border-red-200"
+            default: return "bg-blue-100 text-blue-800 border-blue-200"
+        }
+    }
+
+    if (status === "loading" || fetching) {
+        return (
+            <div className="flex items-center justify-center min-h-[400px]">
+                <Loader2 className="h-8 w-8 animate-spin text-primary" />
+            </div>
+        )
+    }
+
+    if (session?.user?.role !== "ADMIN" && session?.user?.role !== "MANAGER") {
+        return null // Will redirect in useEffect
+    }
+
+    return (
+        <div className="space-y-8">
+            <div className="flex items-center justify-between">
+                <h1 className="text-3xl font-bold tracking-tight">Assignments</h1>
+            </div>
+
+            {/* Create Assignment Form */}
+            <Card className="max-w-4xl">
+                <CardHeader>
+                    <CardTitle>New Assignment</CardTitle>
+                    <CardDescription>Assign an inspector to a specific project.</CardDescription>
+                </CardHeader>
+                <form onSubmit={handleAssign}>
+                    <CardContent className="grid gap-6 md:grid-cols-3">
+                        <div className="space-y-2">
+                            <Label htmlFor="company">Select Company</Label>
+                            <select
+                                id="company"
+                                className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background file:border-0 file:bg-transparent file:text-sm file:font-medium placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50"
+                                value={selectedCompanyId}
+                                onChange={(e) => setSelectedCompanyId(e.target.value)}
+                                required
+                            >
+                                <option value="">Select Company</option>
+                                {companies.map((c) => (
+                                    <option key={c.id} value={c.id}>{c.name}</option>
+                                ))}
+                            </select>
+                        </div>
+                        <div className="space-y-2">
+                            <Label htmlFor="project">Select Project</Label>
+                            <select
+                                id="project"
+                                className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background file:border-0 file:bg-transparent file:text-sm file:font-medium placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50"
+                                value={selectedProjectId}
+                                onChange={(e) => setSelectedProjectId(e.target.value)}
+                                disabled={!selectedCompanyId}
+                                required
+                            >
+                                <option value="">Select Project</option>
+                                {projects.map((p) => (
+                                    <option key={p.id} value={p.id}>{p.name}</option>
+                                ))}
+                            </select>
+                        </div>
+                        <div className="space-y-2">
+                            <Label htmlFor="inspector">Select Inspector</Label>
+                            <select
+                                id="inspector"
+                                className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background file:border-0 file:bg-transparent file:text-sm file:font-medium placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50"
+                                value={selectedInspectorId}
+                                onChange={(e) => setSelectedInspectorId(e.target.value)}
+                                required
+                            >
+                                <option value="">Select Inspector</option>
+                                {inspectors.map((i) => (
+                                    <option key={i.id} value={i.id}>{i.name} ({i.email})</option>
+                                ))}
+                            </select>
+                        </div>
+                    </CardContent>
+                    <CardFooter className="justify-end border-t p-4">
+                        <Button type="submit" disabled={loading || !selectedProjectId || !selectedInspectorId}>
+                            {loading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+                            Assign Inspector
+                        </Button>
+                    </CardFooter>
+                </form>
+            </Card>
+
+            {/* Assignments List */}
+            <div className="space-y-4">
+                <div className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
+                    <div className="flex items-center gap-2 overflow-x-auto pb-2 md:pb-0">
+                        {["all", "active", "completed", "cancelled"].map((status) => (
+                            <Button
+                                key={status}
+                                variant={filterStatus === status ? "default" : "outline"}
+                                size="sm"
+                                onClick={() => setFilterStatus(status)}
+                                className="capitalize"
+                            >
+                                {status}
+                            </Button>
+                        ))}
+                    </div>
+                    <div className="relative w-full max-w-sm">
+                        <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
+                        <Input
+                            placeholder="Search by inspector or project..."
+                            className="pl-8"
+                            value={searchTerm}
+                            onChange={(e) => setSearchTerm(e.target.value)}
+                        />
+                    </div>
+                </div>
+
+                <div className="rounded-md border bg-card">
+                    <div className="overflow-x-auto">
+                        <table className="w-full text-sm">
+                            <thead>
+                                <tr className="border-b bg-muted/50 text-left font-medium">
+                                    <th className="p-4">Company Name</th>
+                                    <th className="p-4">Project Name</th>
+                                    <th className="p-4">Inspector Name</th>
+                                    <th className="p-4">Assigned By</th>
+                                    <th className="p-4">Date Assigned</th>
+                                    <th className="p-4">Status</th>
+                                    <th className="p-4 text-right">Actions</th>
+                                </tr>
+                            </thead>
+                            <tbody className="divide-y">
+                                {filteredAssignments.length === 0 ? (
+                                    <tr>
+                                        <td colSpan={7} className="p-8 text-center text-muted-foreground">
+                                            No assignments found.
+                                        </td>
+                                    </tr>
+                                ) : (
+                                    filteredAssignments.map((assignment) => (
+                                        <tr key={assignment.id} className="hover:bg-muted/50 transition-colors">
+                                            <td className="p-4 flex items-center gap-2">
+                                                <Building2 className="h-4 w-4 text-muted-foreground" />
+                                                {assignment.project.company.name}
+                                            </td>
+                                            <td className="p-4">
+                                                <div className="flex items-center gap-2 font-medium">
+                                                    <Briefcase className="h-4 w-4 text-muted-foreground" />
+                                                    {assignment.project.name}
+                                                </div>
+                                            </td>
+                                            <td className="p-4">
+                                                <div className="flex items-center gap-2">
+                                                    <User className="h-4 w-4 text-muted-foreground" />
+                                                    {assignment.inspectionBoy.name}
+                                                </div>
+                                            </td>
+                                            <td className="p-4 text-muted-foreground">
+                                                {assignment.assigner.name}
+                                            </td>
+                                            <td className="p-4 text-muted-foreground">
+                                                <div className="flex items-center gap-2">
+                                                    <Calendar className="h-4 w-4" />
+                                                    {new Date(assignment.createdAt).toLocaleDateString()}
+                                                </div>
+                                            </td>
+                                            <td className="p-4">
+                                                <Badge
+                                                    variant="outline"
+                                                    className={`capitalize font-medium ${getStatusColor(assignment.status)}`}
+                                                >
+                                                    {assignment.status}
+                                                </Badge>
+                                            </td>
+                                            <td className="p-4 text-right">
+                                                {assignment.status === "active" && (
+                                                    <Button
+                                                        variant="ghost"
+                                                        size="sm"
+                                                        className="text-destructive hover:bg-destructive/10 hover:text-destructive"
+                                                        onClick={() => handleCancel(assignment.id)}
+                                                    >
+                                                        <Trash2 className="h-4 w-4 mr-1" />
+                                                        Cancel
+                                                    </Button>
+                                                )}
+                                            </td>
+                                        </tr>
+                                    ))
+                                )}
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        </div>
+    )
+}
