@@ -25,7 +25,10 @@ export async function GET(req: Request) {
         return NextResponse.json(projects)
     } catch (error) {
         console.error("[PROJECTS_GET]", error)
-        return new NextResponse("Internal Error", { status: 500 })
+        return NextResponse.json({
+            error: "Database Connection Error",
+            details: error instanceof Error ? error.message : String(error)
+        }, { status: 500 })
     }
 }
 
@@ -58,6 +61,9 @@ export async function POST(req: Request) {
         return NextResponse.json(project)
     } catch (error) {
         console.error("[PROJECTS_POST]", error)
-        return new NextResponse("Internal Error", { status: 500 })
+        return NextResponse.json({
+            error: "Database Connection Error",
+            details: error instanceof Error ? error.message : String(error)
+        }, { status: 500 })
     }
 }

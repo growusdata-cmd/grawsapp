@@ -15,20 +15,28 @@ export async function GET(req: Request) {
     const { searchParams } = new URL(req.url)
     const role = searchParams.get("role")
 
-    if (role === "INSPECTION_BOY") {
-        const users = await prisma.user.findMany({
-            where: {
-                role: Role.INSPECTION_BOY,
-                isActive: true,
-            },
-            select: {
-                id: true,
-                name: true,
-                email: true,
-            },
-        })
-        return NextResponse.json(users)
-    }
+    try {
+        if (role === "INSPECTION_BOY") {
+            const users = await prisma.user.findMany({
+                where: {
+                    role: Role.INSPECTION_BOY,
+                    isActive: true,
+                },
+                select: {
+                    id: true,
+                    name: true,
+                    email: true,
+                },
+            })
+            return NextResponse.json(users)
+        }
 
-    return NextResponse.json({ error: "Invalid role filter" }, { status: 400 })
+        return NextResponse.json({ error: "Invalid role filter" }, { status: 400 })
+    } catch (error) {
+        console.error("GET_USERS_ERROR", error)
+        return NextResponse.json({
+            error: "Database Connection Error",
+            details: error instanceof Error ? error.message : String(error)
+        }, { status: 500 })
+    }
 }
