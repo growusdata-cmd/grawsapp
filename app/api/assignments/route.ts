@@ -72,6 +72,12 @@ export async function POST(req: Request) {
         const body = await req.json()
         const { projectId, inspectionBoyId } = body
 
+        console.log("ASSIGNMENT_POST_DEBUG:", {
+            sessionUserId: session.user.id,
+            projectId,
+            inspectionBoyId
+        })
+
         if (!projectId || !inspectionBoyId) {
             return NextResponse.json({ error: "Missing fields" }, { status: 400 })
         }

@@ -126,16 +126,16 @@ export default function LoginPage() {
                         </div>
 
                         <div className="grid grid-cols-2 gap-2 w-full">
-                            <Button variant="outline" size="sm" onClick={() => handleDemoLogin("admin@demo.com")} disabled={loading}>
+                            <Button variant="outline" size="sm" onClick={() => handleDemoLogin("admin@cims.com")} disabled={loading}>
                                 Admin
                             </Button>
-                            <Button variant="outline" size="sm" onClick={() => handleDemoLogin("manager@demo.com")} disabled={loading}>
+                            <Button variant="outline" size="sm" onClick={() => handleDemoLogin("manager@cims.com")} disabled={loading}>
                                 Manager
                             </Button>
-                            <Button variant="outline" size="sm" onClick={() => handleDemoLogin("inspector@demo.com")} disabled={loading}>
+                            <Button variant="outline" size="sm" onClick={() => handleDemoLogin("inspector@cims.com")} disabled={loading}>
                                 Inspector
                             </Button>
-                            <Button variant="outline" size="sm" onClick={() => handleDemoLogin("client@demo.com")} disabled={loading}>
+                            <Button variant="outline" size="sm" onClick={() => handleDemoLogin("client@cims.com")} disabled={loading}>
                                 Client
                             </Button>
                         </div>

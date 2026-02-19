@@ -69,8 +69,13 @@ export default function AdminDashboard() {
                     <h3 className="text-xl font-bold tracking-tight">
                         Failed to load dashboard data
                     </h3>
-                    <p className="text-sm text-muted-foreground">
-                        {stats?.error || "An unexpected error occurred while fetching system statistics."}
+                    <p className="text-sm text-muted-foreground flex flex-col gap-1">
+                        <span>{stats?.error || "An unexpected error occurred while fetching system statistics."}</span>
+                        {stats?.details && (
+                            <span className="text-[10px] bg-muted p-2 rounded border mt-2 max-w-md overflow-auto font-mono">
+                                {stats.details}
+                            </span>
+                        )}
                     </p>
                     <Button onClick={() => window.location.reload()} className="mt-4">
                         Try Again

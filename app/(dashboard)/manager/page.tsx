@@ -58,6 +58,32 @@ export default function ManagerDashboard() {
         )
     }
 
+    if (!stats || stats.error) {
+        return (
+            <div className="flex min-h-[400px] flex-col items-center justify-center rounded-lg border border-dashed shadow-sm">
+                <div className="flex flex-col items-center gap-2 text-center">
+                    <div className="h-10 w-10 text-destructive bg-destructive/10 rounded-full flex items-center justify-center mb-2">
+                        <ClipboardList className="h-6 w-6" />
+                    </div>
+                    <h3 className="text-xl font-bold tracking-tight">
+                        Failed to load dashboard data
+                    </h3>
+                    <p className="text-sm text-muted-foreground flex flex-col gap-1 max-w-md">
+                        <span>{stats?.error || "An unexpected error occurred while fetching manager statistics."}</span>
+                        {stats?.details && (
+                            <span className="text-[10px] bg-muted p-2 rounded border mt-2 overflow-auto font-mono text-left">
+                                {stats.details}
+                            </span>
+                        )}
+                    </p>
+                    <Button onClick={() => window.location.reload()} className="mt-4">
+                        Try Again
+                    </Button>
+                </div>
+            </div>
+        )
+    }
+
     const kpiCards = [
         {
             title: "Pending Approvals",

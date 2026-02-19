@@ -71,6 +71,9 @@ export async function GET() {
         })
     } catch (error) {
         console.error("MANAGER_STATS_ERROR", error)
-        return NextResponse.json({ error: "Internal Error" }, { status: 500 })
+        return NextResponse.json({
+            error: "Database Connection Error",
+            details: error instanceof Error ? error.message : String(error)
+        }, { status: 500 })
     }
 }

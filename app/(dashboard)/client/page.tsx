@@ -49,6 +49,35 @@ export default function ClientDashboard() {
         )
     }
 
+    if (reports && (reports as any).error) {
+        const errorData = reports as any;
+        return (
+            <div className="container py-8 max-w-6xl">
+                <div className="flex min-h-[400px] flex-col items-center justify-center rounded-lg border border-dashed shadow-sm bg-white">
+                    <div className="flex flex-col items-center gap-2 text-center p-6">
+                        <div className="h-12 w-12 text-destructive bg-destructive/10 rounded-full flex items-center justify-center mb-4">
+                            <FileText className="h-6 w-6" />
+                        </div>
+                        <h3 className="text-xl font-bold tracking-tight">
+                            Failed to load reports
+                        </h3>
+                        <p className="text-sm text-muted-foreground flex flex-col gap-1 max-w-sm">
+                            <span>{errorData.error || "An unexpected error occurred while fetching your reports."}</span>
+                            {errorData.details && (
+                                <span className="text-[10px] bg-muted p-2 rounded border mt-2 overflow-auto font-mono text-left">
+                                    {errorData.details}
+                                </span>
+                            )}
+                        </p>
+                        <Button onClick={() => window.location.reload()} className="mt-6">
+                            Try Again
+                        </Button>
+                    </div>
+                </div>
+            </div>
+        )
+    }
+
     return (
         <div className="container py-8 space-y-8 max-w-6xl">
             {/* Header Section */}
